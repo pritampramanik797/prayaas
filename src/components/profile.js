@@ -1,10 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { auth, db } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
+import RealTimeFootage from "./RealTimeFootage";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 function Profile() {
   const [userDetails, setUserDetails] = useState(null);
-  const [activeSection, setActiveSection] = useState("realtime"); // Default to Real-time footage
+  const [activeSection, setActiveSection] = useState("RealTimeFootage"); // Default section
+
+  // Set user persistence to LOCAL
+  useEffect(() => {
+    const auth = getAuth();
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        fetchUserData(); // Fetch user data after persistence is set
+      })
+      .catch((error) => {
+        console.error("Error setting persistence:", error);
+      });
+  }, []);
 
   const fetchUserData = async () => {
     auth.onAuthStateChanged(async (user) => {
@@ -22,10 +36,6 @@ function Profile() {
     });
   };
 
-  useEffect(() => {
-    fetchUserData();
-  }, []);
-
   async function handleLogout() {
     try {
       await auth.signOut();
@@ -37,286 +47,165 @@ function Profile() {
   }
 
   return (
-    <div style={{ display: "flex", fontFamily: "'Poppins', sans-serif" }}>
-      {/* Sidebar with glass effect */}
-      <div
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+      {/* Navbar */}
+      <nav
+        className="navbar navbar-expand-lg"
         style={{
-          width: "250px",
-          height: "calc(100vh - 80px)", // Adjusting height so it doesn't affect the navbar
-          background: "rgba(255, 255, 255, 0.1)", // Glass effect
-          backdropFilter: "blur(10px)",
-          padding: "20px",
+          backgroundImage: "linear-gradient(135deg, #000000, #4b0082)",
+          color: "white",
+          width: "100%", // Full width
           position: "fixed",
-          top: "80px", // Ensures it appears just below the navbar
-          left: "20px",
-          borderRadius: "15px", // Rounded corners
-          color: "black",
-          display: "flex",
-          flexDirection: "column",
-          boxShadow: "2px 0 10px rgba(0, 0, 0, 0.3)",
-          zIndex: 10, // Elevate the sidebar
-          justifyContent: "space-between", // Space out elements
+          top: 0,
+          zIndex: 1000,
         }}
       >
-        <div>
-          {/* Sidebar Heading */}
-          <h1
+        <div className="container-fluid">
+          <a className="navbar-brand" href="#" style={{ color: "#e0e0e0" }}>
+            <b>PRAYAAS</b>
+          </a>
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
+          <div className="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul className="navbar-nav me-auto mb-2 mb-lg-0"></ul>
+
+            {userDetails && (
+              <span className="navbar-text me-3" style={{ color: "#e0e0e0" }}>
+                Hello, {userDetails.firstName}
+              </span>
+            )}
+            <button
+              className="btn btn-outline-light"
+              style={{
+                borderColor: "white",
+                color: "#e0e0e0",
+              }}
+              onClick={handleLogout}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = "red";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = "transparent";
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <div style={{ display: "flex", flex: 1, marginTop: "60px" }}>
+        {/* Sidebar */}
+        <div
+          style={{
+            width: "250px",
+            height: "calc(100vh - 70px)", // Sidebar height adjusted
+            backgroundImage: "linear-gradient(135deg, #000000, #4b0082)", // Gradient background for sidebar
+            padding: "20px",
+            position: "fixed",
+            top: "60px", // Right below the navbar
+            left: "0",
+            color: "white",
+            display: "flex",
+            flexDirection: "column",
+            boxShadow: "2px 0 5px rgba(0, 0, 0, 0.1)",
+            borderRadius: "10px",
+            zIndex: "1000",
+          }}
+        >
+          <h3
             style={{
-              fontSize: "20px",
-              color: "black", // Black for Dashboard heading
+              color: "#e0e0e0", // Lighter color for the heading
+              marginBottom: "30px",
               textAlign: "left",
-              marginBottom: "20px",
-              fontWeight: "bold", // Bold style for heading
             }}
           >
             Dashboard
-          </h1>
-
+          </h3>
           <button
             className="btn mb-3"
             style={{
-              color: "black", // Black color for buttons
+              backgroundColor: "transparent",
+              color: "#dcdcdc", // Text color for sidebar items
               border: "none",
               padding: "10px 15px",
               borderRadius: "5px",
               cursor: "pointer",
               marginBottom: "15px",
               textAlign: "left",
-              fontSize: "16px",
-              backgroundColor: "transparent", // No background color
-              transition: "background-color 0.3s ease, color 0.3s ease",
             }}
-            onClick={() => setActiveSection("realtime")}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = "#8a2be2";
-              e.target.style.color = "white";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = "transparent";
-              e.target.style.color = "black";
-            }}
+            onClick={() => setActiveSection("RealTimeFootage")}
           >
-            Real-time Footage
+            <b>Real-time Footage</b>
           </button>
-
           <button
             className="btn"
             style={{
-              color: "black", // Black color for buttons
+              backgroundColor: "transparent",
+              color: "#dcdcdc", // Text color for sidebar items
               border: "none",
               padding: "10px 15px",
               borderRadius: "5px",
               cursor: "pointer",
               textAlign: "left",
-              fontSize: "16px",
-              backgroundColor: "transparent", // No background color
-              transition: "background-color 0.3s ease, color 0.3s ease",
             }}
-            onClick={() => setActiveSection("analytics")}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = "#8a2be2";
-              e.target.style.color = "white";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = "transparent";
-              e.target.style.color = "black";
-            }}
+            onClick={() => setActiveSection("Analytics")}
           >
-            Analytics
+            <b>Analytics</b>
           </button>
         </div>
 
-        <div
-          style={{
-            paddingBottom: "20px", // Adding some padding at the bottom
-          }}
-        >
-          <p style={{ textAlign: "center", color: "#eee" }}>Footer Info</p>
-        </div>
-      </div>
+        {/* Main content */}
+        <div style={{ marginLeft: "250px", width: "calc(100% - 250px)", padding: "20px", overflow: "hidden" }}>
+          {/* Main section */}
+          <div style={{ padding: "20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {activeSection === "RealTimeFootage" && (
+              <>
+                <div
+                  style={{
+                    position: "relative",
+                    height: "500px", // Medium-sized box for video
+                    width: "710px", // Aspect ratio maintained
+                    background: "#000",
+                    borderRadius: "10px",
+                    overflow: "hidden",
+                    transform: "scaleX(-1)", // This will flip the video horizontally
+                  }}
+                >
+                  <RealTimeFootage />
+                </div>
 
-      <div style={{ marginLeft: "290px", width: "100%" }}>
-        {/* Navbar */}
-        <nav
-          className="navbar navbar-expand-lg fixed-top w-100"
-          style={{ backgroundColor: "#8a2be2" }} // Violet navbar
-        >
-          <div className="container-fluid">
-            {/* Prayaas as Navbar Title */}
-            <a className="navbar-brand" href="#" style={{ color: "white" }}>
-              Prayaas
-            </a>
-            <button
-              className="navbar-toggler"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#navbarSupportedContent"
-              aria-controls="navbarSupportedContent"
-              aria-expanded="false"
-              aria-label="Toggle navigation"
-            >
-              <span className="navbar-toggler-icon"></span>
-            </button>
-            <div className="collapse navbar-collapse" id="navbarSupportedContent">
-              <ul className="navbar-nav me-auto mb-2 mb-lg-0"></ul>
-
-              {/* Hello message and Logout button */}
-              {userDetails && (
-                <span className="navbar-text me-3" style={{ color: "white" }}>
-                  Hello, {userDetails.firstName}
-                </span>
-              )}
-              <button
-                className="btn btn-outline-danger"
-                style={{
-                  color: "white", // White text color for logout button before hover
-                  border: "2px solid white", // White border before hover
-                  backgroundColor: "transparent", // Transparent background before hover
-                }}
-                onClick={handleLogout}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = "red";
-                  e.target.style.color = "white"; // Ensure text stays white on hover
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = "transparent";
-                  e.target.style.color = "white"; // Keep text color white when not hovered
-                }}
-              >
-                Logout
-              </button>
-            </div>
+                {/* Gender Ratio Section */}
+                <div
+                  style={{
+                    marginTop: "20px",
+                    padding: "20px",
+                    width: "100%",
+                    textAlign: "center",
+                    backgroundColor: "#f0f0f0",
+                    borderRadius: "10px",
+                  }}
+                >
+                  <h4>Gender Ratio</h4>
+                  <h5>0.4</h5>
+                </div>
+              </>
+            )}
+            {activeSection === "Analytics" && (
+              <div style={{ padding: "20px" }}>
+                {/* Analytics content goes here */}
+              </div>
+            )}
           </div>
-        </nav>
-
-        {/* Content Area */}
-        <div style={{ padding: "100px 20px", color: "#333" }}>
-          {activeSection === "realtime" && (
-            <div>
-              <h2>Real-time Footage</h2>
-              <p>Webcam footage will be displayed here.</p>
-              {/* Add real-time webcam component here */}
-            </div>
-          )}
-
-          {activeSection === "analytics" && (
-            <div>
-              <h2>Analytics</h2>
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  marginTop: "20px",
-                }}
-              >
-                <thead>
-                  <tr style={{ backgroundColor: "#8a2be2", color: "white" }}>
-                    <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      Serial No.
-                    </th>
-                    <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      Location
-                    </th>
-                    <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      Date
-                    </th>
-                    <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      Time
-                    </th>
-                    <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      Number of Alerts
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      1
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      Park Street
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      2024-09-05
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      10:30 AM
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      5
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      2
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      Salt Lake
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      2024-09-05
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      11:00 AM
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      8
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      3
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      New Town
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      2024-09-05
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      11:30 AM
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      7
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      4
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      Esplanade
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      2024-09-05
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      12:00 PM
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      4
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      5
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      Howrah
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      2024-09-05
-                    </td>
-                      12:30 PM
-                    </td>
-                    <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                      6
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       </div>
     </div>
